@@ -14,6 +14,8 @@ dotfiles:
 	done; \
 	# hacks
 
-docker: 
+docker-build: 
 	docker build -t bgulla/dotfiles -f Dockerfile .
 
+run:
+	docker run --rm -it bgulla/dotfiles zsh
