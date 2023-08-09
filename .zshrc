@@ -128,3 +128,5 @@ source ~/dotfiles/zsh-autosuggestions/zsh-autosuggestions.zsh
 export PATH="/Users/brandon/bin:/Users/brandon/.rd/bin:$PATH"
 
 export XDG_CONFIG_HOME=~/.config
+
+[ -f .aliases ] && source .aliases

@@ -1,0 +1,18 @@
+# Install kubectl krew support
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+## bash-like aliases
+mkdircd () {
+  mkdir "$1"
+  cd "$1"
+}
+
+##
+# k8s | set default cluster config
+##
+## Set a default k3s/rke2 cluster config
+if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+elif [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
+  export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+fi
