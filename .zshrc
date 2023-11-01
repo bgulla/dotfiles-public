@@ -130,3 +130,11 @@ export PATH="/Users/brandon/bin:/Users/brandon/.rd/bin:$PATH"
 export XDG_CONFIG_HOME=~/.config
 
 [ -f .aliases ] && source .aliases
+
+
+# k3s/rke2 auto kubeconfig-ifying
+if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+elif [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
+  export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+fi
