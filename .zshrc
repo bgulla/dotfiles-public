@@ -131,6 +131,15 @@ export XDG_CONFIG_HOME=~/.config
 
 [ -f .aliases ] && source .aliases
 
+## Autocomplete stuff
+if command -v velero >/dev/null 2>&1; then
+  source <(velero completion zsh)
+  alias v=velero
+fi
+### EOAutocomplete
+
+
+
 
 # k3s/rke2 auto kubeconfig-ifying
 if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
