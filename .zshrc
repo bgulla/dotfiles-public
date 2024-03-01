@@ -138,9 +138,6 @@ if command -v velero >/dev/null 2>&1; then
 fi
 ### EOAutocomplete
 
-
-
-
 # k3s/rke2 auto kubeconfig-ifying
 if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
   export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
