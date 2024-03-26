@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Detect the operating system and set the path for adgcli
+OS="`uname`"
+case $OS in
+  'Linux' | 'Darwin')
+    ADGCLI="$HOME/bin/adgcli"
+    ;;
+  *)
+    echo "Unsupported OS."
+    exit 1
+    ;;
+esac
+
+# Verify if adgcli is executable
+if [ ! -x "$ADGCLI" ]; then
+    echo "adgcli executable not found or not executable at $ADGCLI"
+    exit 1
+fi
+
+# Function to get IP address of the default network interface
+function get_default_ip() {
+  if [[ "$OS" == "Linux" ]]; then
+    ip -4 addr show $(ip route show default | awk '/default/ {print $5}') | grep -oP '(?<=inet\s)\d+(\.\d+){3}'
+  elif [[ "$OS" == "Darwin" ]]; then
+    ipconfig getifaddr $(route get default | grep interface | awk '{print $2}')
+  fi
+}
+
+# Get the current hostname
+current_hostname=$(hostname)
+
+echo "Current hostname: $current_hostname"
+echo "Would you like to update the hostname? If so, enter the new hostname; otherwise, press Enter to skip."
+read new_hostname
+
+if [ ! -z "$new_hostname" ]; then
+    sudo hostnamectl set-hostname "$new_hostname" || { echo "Failed to update hostname."; exit 1; }
+    echo "Hostname updated to $new_hostname."
+else
+    echo "Hostname update skipped."
+    new_hostname=$current_hostname
+fi
+
+# Ask for the domain directly, allowing skip by pressing Enter
+echo "Enter the domain to append to the hostname (press Enter to skip):"
+read domain
+
+if [[ -n "$domain" ]]; then
+    full_hostname="$new_hostname.$domain"
+else
+    full_hostname="$new_hostname"
+fi
+
+# Add new DNS entry
+ip_address=$(get_default_ip)
+$ADGCLI add --host="$full_hostname" --ip="$ip_address"
+echo "DNS entry for $full_hostname with IP $ip_address added."
+
+# Ask about adding a wildcard domain
+echo "Would you like to add a wildcard domain? (press Enter to skip, any other key for yes):"
+read wildcard_decision
+
+if [[ -n "$wildcard_decision" ]]; then
+    wildcard_hostname="*.$full_hostname"
+    $ADGCLI add --host="$wildcard_hostname" --ip="$ip_address"
+    echo "Wildcard DNS entry for $wildcard_hostname with IP $ip_address added."
+fi

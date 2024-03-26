@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+import requests
+import json
+import os
+import sys
+
+class UnauthenticatedError(Exception):
+    pass
+
+def load_env_variables(env_path):
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                if line.startswith('#') or not line.strip():
+                    continue
+                key, value = line.strip().split('=', 1)
+                os.environ.setdefault(key, value)
+
+env_file_path = os.path.expanduser('~/dotfiles/private.env')
+load_env_variables(env_file_path)
+
+ADGUARD_PRIMARY_USER = os.getenv('ADGUARD_PRIMARY_USER')
+ADGUARD_PRIMARY_PASSWORD = os.getenv('ADGUARD_PRIMARY_PASSWORD')
+ADGUARD_PRIMARY_URL = os.getenv('ADGUARD_PRIMARY_URL')
+
+if not all([ADGUARD_PRIMARY_USER, ADGUARD_PRIMARY_PASSWORD, ADGUARD_PRIMARY_URL]):
+    print("Missing required environment variables. Please set them in your environment or in the private.env file.")
+    sys.exit(1)
+
+def get_login_cookie(url, user, passwd):
+    creds = {'name': user, 'password': passwd}
+    response = requests.post(f'{url}/control/login', data=json.dumps(creds), headers={'Content-Type': 'application/json'})
+    return response.cookies['agh_session']
+
+def update_entries(url, cookie, sync_entries):
+    cookies = {'agh_session': cookie}
+    for entry in sync_entries:
+        data = {'domain': entry['domain'], 'answer': entry['answer']}
+        if entry['action'] == 'ADD':
+            print(f"  - Adding entry ({entry['domain']} => {entry['answer']})")
+            response = requests.post(f'{url}/control/rewrite/add', cookies=cookies, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+        elif entry['action'] == 'DEL':
+            print(f"  - Deleting entry ({entry['domain']} => {entry['answer']})")
+            response = requests.post(f'{url}/control/rewrite/delete', cookies=cookies, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+        if response.status_code == 403:
+            raise UnauthenticatedError
+
+def add_single_entry(primary_cookie, ip, hostname):
+    try:
+        sync_entries = [{'action': 'ADD', 'domain': hostname, 'answer': ip}]
+        update_entries(ADGUARD_PRIMARY_URL, primary_cookie, sync_entries)
+    except UnauthenticatedError:
+        print("[ERROR] Authentication failed.")
+
+def print_entities(primary_cookie, adg_host):
+    dns_dict = get_entities(primary_cookie, adg_host)
+    for line in dns_dict:
+        print(f"{line['answer']}\t{line['domain']}")
+
+def get_entities(primary_cookie, adg_host):
+    cookies = {'agh_session': primary_cookie}
+    response = requests.get(f'{adg_host}/control/rewrite/list', cookies=cookies)
+    if response.status_code in [403, 405]:
+        raise UnauthenticatedError
+    return response.json()
+
+def delete_single_entry(primary_cookie, ip, hostname):
+    try:
+        sync_entries = [{'action': 'DEL', 'domain': hostname, 'answer': ip}]
+        update_entries(ADGUARD_PRIMARY_URL, primary_cookie, sync_entries)
+    except UnauthenticatedError:
+        print("[ERROR] Authentication failed.")
+
+def get_ip(primary_cookie, adg_host, hostname):
+    for line in get_entities(primary_cookie, adg_host):
+        if line['domain'] == hostname:
+            print(f"deleting {hostname} {line['answer']}")
+            return line['answer']
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('action', choices=['add', 'delete', 'ls', 'rm'])
+    parser.add_argument('--host', type=str, required=False)
+    parser.add_argument('--ip', type=str)
+
+    args = parser.parse_args()
+
+    if args.action == 'rm':
+        args.action = 'delete'
+
+    print(f"Running Adguard Bulk-add for '{ADGUARD_PRIMARY_URL}'")
+
+    primary_cookie = get_login_cookie(ADGUARD_PRIMARY_URL, ADGUARD_PRIMARY_USER, ADGUARD_PRIMARY_PASSWORD)
+
+    if primary_cookie:
+        if args.action == 'add':
+            add_single_entry(primary_cookie, args.ip, args.host)
+        elif args.action == 'ls':
+            print_entities(primary_cookie, ADGUARD_PRIMARY_URL)
+        elif args.action == 'delete':
+            if not args.ip:
+                args.ip = get_ip(primary_cookie, ADGUARD_PRIMARY_URL, args.host)
+            delete_single_entry(primary_cookie, args.ip, args.host)
+    else:
+        print("[FATAL] Unable to obtain cookie from {ADGUARD_PRIMARY_URL}.")
