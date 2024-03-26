@@ -16,3 +16,5 @@ if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
 elif [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 fi
+
+alias k3s-chown='sudo chown -R ${USER} ${KUBECONFIG}'
