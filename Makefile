@@ -53,3 +53,6 @@ tmux:
 #	mkdir -p ~/.tmux/plugins
 	chmod +x ~/tmux-config/install.sh
 	~/tmux-config/install.sh
+
+zsh:
+	chsh -s $(which zsh)
