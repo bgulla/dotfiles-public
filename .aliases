@@ -2,10 +2,15 @@
 export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 
 ## bash-like aliases
-mkdircd () {
-  mkdir "$1"
-  cd "$1"
+function mkdircd() {
+  if [[ "$1" == "-p" ]]; then
+    shift
+    mkdir -p "$1" && cd "$1"
+  else
+    mkdir "$1" && cd "$1"
+  fi
 }
+
 
 ##
 # k8s | set default cluster config
@@ -18,3 +23,18 @@ elif [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
 fi
 
 alias k3s-chown='sudo chown -R ${USER} ${KUBECONFIG}'
+
+
+# Check for ~/.warn_k3s file
+if [[ -e "$HOME/.warn_k3s" ]]; then
+  # Check read permissions for /etc/rancher/k3s/k3s.yaml
+  if [[ -e "/etc/rancher/k3s/k3s.yaml" && ! -r "/etc/rancher/k3s/k3s.yaml" ]]; then
+    echo "Warning: You do not have read permissions for /etc/rancher/k3s/k3s.yaml"
+  fi
+  
+  # Check read permissions for /etc/rancher/rke2/rke2.yaml
+  if [[ -e "/etc/rancher/rke2/rke2.yaml" && ! -r "/etc/rancher/rke2/rke2.yaml" ]]; then
+    echo "Warning: You do not have read permissions for /etc/rancher/rke2/rke2.yaml"
+  fi
+fi
+
