@@ -144,3 +144,62 @@ if [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
 elif [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
   export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 fi
+
+
+## Add rust if the bin folder exists
+#cargo install tpi
+
+if [ -d "$HOME/.cargo/bin" ]; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+
+# _____ _   _ ____  ___ _   _  ____
+#|_   _| | | |  _ \|_ _| \ | |/ ___|
+#  | | | | | | |_) || ||  \| | |  _
+#  | | | |_| |  _ < | || |\  | |_| |
+#  |_|  \___/|_| \_\___|_| \_|\____|
+
+function tpi-cli() {
+    local user="root"  # Define the user variable
+    local password="${TURING_PW}"  # Read the password from the environment variable
+    local board_host="board1.tpi.l0l0.lol"  # Default host
+    local args=()  # Array to hold the arguments we will pass to tpi
+    
+    # Loop through the arguments to find --board=<value>
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --board=*)
+                board_value="${1#*=}"  # Extract the value after '='
+                case "$board_value" in
+                    1)
+                        echo "[defaulting to board 1]"
+                        board_host="board1.tpi.l0l0.lol"
+                        ;;
+                    2)
+                        echo "[defaulting to board 2]"
+                        board_host="board1.tpi.l0l0.lol"
+                        ;;
+                    *)
+                        echo "[defaulting to board 1]"
+                        board_host="board1.tpi.l0l0.lol"
+                        ;;
+                esac
+                shift  # Skip this argument (as it was --board=<value>)
+                ;;
+            *)
+                args+=("$1")  # Add the argument to args if it's not --board
+                shift  # Move to the next argument
+                ;;
+        esac
+    done
+
+    # Check if the password is set
+    if [[ -z "$password" ]]; then
+        echo "Error: TURING_PW environment variable is not set."
+        return 1
+    fi
+
+    # Execute tpi with the appropriate host, user, password, and remaining arguments
+    tpi --user="$user" --password="$password" --host="$board_host" "${args[@]}"
+}
