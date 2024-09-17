@@ -38,3 +38,22 @@ if [[ -e "$HOME/.warn_k3s" ]]; then
   fi
 fi
 
+# ===============================
+# Velero Autocomplete and Alias
+# ===============================
+
+# Check if Velero is installed
+if command -v velero > /dev/null 2>&1; then
+
+    # Source Velero autocompletion
+    source <(velero completion zsh)
+
+    # Create alias 'v' for Velero
+    alias v='velero'
+
+    # Enable autocompletion for alias 'v'
+    compdef _velero v
+
+fi
+
+# ===============================
