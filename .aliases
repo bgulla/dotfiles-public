@@ -59,4 +59,4 @@ fi
 # ===============================
 
 
-alias exportkubeconfig="export KUBECONFIG=${PWD}/kubeconfig"
+#alias exportkubeconfig="export KUBECONFIG=${PWD}/kubeconfig"
