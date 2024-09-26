@@ -57,3 +57,6 @@ if command -v velero > /dev/null 2>&1; then
 fi
 
 # ===============================
+
+
+alias exportkubeconfig="export KUBECONFIG=${PWD}/kubeconfig"
