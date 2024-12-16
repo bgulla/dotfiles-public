@@ -10,5 +10,4 @@ docker run --rm \
   -e SUDO_PASSWORD_HASH= `#optional` \
   -p 8443:8443 \
   -v ${PWD}:/data \
-  --restart unless-stopped \
   lscr.io/linuxserver/code-server:latest
