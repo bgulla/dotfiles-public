@@ -1,4 +1,5 @@
-.PHONY: all bin dotfiles etc
+.PHONY: dotfiles
+# .PHONY: all bin dotfiles etc
 # Find all files in ./bin
 FILES := $(wildcard bin/*)
 
