@@ -60,3 +60,41 @@ fi
 
 
 #alias exportkubeconfig="export KUBECONFIG=${PWD}/kubeconfig"
+
+
+vback(){
+velero backup describe $1 --details
+}
+
+tmux-k8s-debug() {
+    SESSION="k8s-debug"
+
+    # Kill the session if it exists
+    tmux kill-session -t ${SESSION}
+
+    # Start a new detached tmux session
+    tmux new-session -d -s $SESSION
+
+    # Rename the first window
+    tmux rename-window "debug"
+
+    # Split into two columns
+    tmux send-keys "k9s -n all" C-m
+    tmux split-window -h
+
+    # Left column (pane 0) - now split into two rows
+    tmux select-pane -t 0
+    tmux split-window -v
+    tmux send-keys "kubectl get svc -A -w" C-m
+
+    # Right column (pane 1) - now split into two rows
+    tmux select-pane -t 1
+    tmux split-window -v
+    tmux send-keys "kubectl get pods -A -w" C-m
+
+    # Move focus to top-right pane (shell)
+    tmux select-pane -t 3
+
+    # Attach to the session
+    tmux attach-session -t $SESSION
+}
