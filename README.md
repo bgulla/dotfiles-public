@@ -1,1 +1,3 @@
 # dotfiles- PLTR Edition
+`TLDR`
+
