@@ -203,3 +203,6 @@ function tpi-cli() {
     # Execute tpi with the appropriate host, user, password, and remaining arguments
     tpi --user="$user" --password="$password" --host="$board_host" "${args[@]}"
 }
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+

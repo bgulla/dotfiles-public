@@ -3,6 +3,12 @@
 # Find all files in ./bin
 FILES := $(wildcard bin/*)
 
+#Local Vars
+DOCKER_NAMESPACE = bgulla
+DOCKER_IMAGE = dotfiles
+DOCKER_TAG = ubuntu
+
+
 # Target for creating symlinks
 symlinks:
 	@mkdir -p ~/bin
@@ -57,3 +63,9 @@ tmux:
 
 zsh:
 	chsh -s $(which zsh)
+
+docker-build:
+	docker build -t $(DOCKER_NAMESPACE)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+
+docker-run:
+	docker run --rm -it $(DOCKER_NAMESPACE)/$(DOCKER_IMAGE):$(DOCKER_TAG)  /bin/sh -c "make dotfiles && exec zsh"
