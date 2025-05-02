@@ -1,3 +1,3 @@
-# dotfiles- PLTR Edition
+# dotfiles-public
 `TLDR`
 
