@@ -206,3 +206,13 @@ function tpi-cli() {
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
+# Check if the system is macOS
+if [[ "$(uname)" == "Darwin" ]]; then
+    # macOS specific settings
+    export PATH="/opt/homebrew/bin:$PATH"
+else
+    # Linux specific settings
+    # You can add Linux-specific PATH modifications here if needed
+    export PATH="$PATH"
+fi
+
