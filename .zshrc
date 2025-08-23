@@ -218,18 +218,118 @@ else
     export PATH="$PATH"
 fi
 
-# --- iTerm2: load prefs from GitHub Pages (mac-only; user=brandon|bgulla) ---
-if [[ $- == *i* ]] && [[ "$OSTYPE" == darwin* ]] && [[ "$USER" == "brandon" || "$USER" == "bgulla" ]]; then
-  ITERM_PREFS_URL="https://bgulla.github.io/dotfiles-public/iterm/"
+# --- iTerm2 local sync + SSH include (mac-only; users: brandon|bgulla) ---
 
-  # Only proceed if we're in iTerm2 OR the iTerm2 prefs domain exists
-  if [[ "$TERM_PROGRAM" == "iTerm.app" ]] || /usr/bin/defaults domains 2>/dev/null | /usr/bin/grep -q com.googlecode.iterm2; then
-    current=$(/usr/bin/defaults read com.googlecode.iterm2 PrefsCustomFolder 2>/dev/null || echo "")
-    if [[ "$current" != "$ITERM_PREFS_URL" ]]; then
-      /usr/bin/defaults write com.googlecode.iterm2 PrefsCustomFolder -string "$ITERM_PREFS_URL"
-      /usr/bin/defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true
-      print -P "%F{cyan}[iTerm2]%f Prefs set to GitHub Pages. Restart iTerm2 to apply."
-    fi
-  fi
+# === Config ===
+ITERM_DEBUG=${ITERM_DEBUG:-0}                        # 1=debug logs, 0=quiet
+SSH_HOST_PATTERN="${SSH_HOST_PATTERN:-*lol}"         # wildcard for hosts (*.lol, *.corp, *.internal)
+SSH_ITERM_PROFILE="${SSH_ITERM_PROFILE:-remote-ssh}" # iTerm profile name to switch to
+
+# Detect dotfiles repo
+if [[ -d "$HOME/dotfiles-public/iterm" ]]; then
+  ITERM_REPO_DIR="$HOME/dotfiles-public"
+elif [[ -d "$HOME/dotfiles/iterm" ]]; then
+  ITERM_REPO_DIR="$HOME/dotfiles"
+else
+  ITERM_REPO_DIR=""
 fi
-# ---------------------------------------------------------------------------
+
+ITERM_FOLDER_PATH="${ITERM_REPO_DIR:+$ITERM_REPO_DIR/iterm}"
+ITERM_PLIST_PATH="${ITERM_FOLDER_PATH:+$ITERM_FOLDER_PATH/com.googlecode.iterm2.plist}"
+SSH_INCLUDE_FILE="${ITERM_REPO_DIR:+$ITERM_REPO_DIR/ssh/iterm-include.conf}"
+
+[[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] repo='$ITERM_REPO_DIR' folder='$ITERM_FOLDER_PATH' plist='$ITERM_PLIST_PATH' include='$SSH_INCLUDE_FILE'"
+
+# Gate: only run if macOS + correct user + repo exists
+if [[ -n "$ITERM_REPO_DIR" ]] && [[ "$OSTYPE" == darwin* ]] && [[ "$USER" == "brandon" || "$USER" == "bgulla" ]]; then
+
+  # --- iTerm setup ---
+  iterm_setup() {
+    if [[ ! -d "$ITERM_FOLDER_PATH" ]]; then
+      echo "[iTerm2] Folder not found: $ITERM_FOLDER_PATH"; return 1
+    fi
+    if [[ "$TERM_PROGRAM" != "iTerm.app" ]] && ! ( /usr/bin/defaults domains 2>/dev/null | grep -q com.googlecode.iterm2 ); then
+      [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] iTerm prefs domain not present yet; launch iTerm once then re-run"
+      return 0
+    fi
+    local current=$(/usr/bin/defaults read com.googlecode.iterm2 PrefsCustomFolder 2>/dev/null || echo "")
+    [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] current_pref='$current' target='$ITERM_FOLDER_PATH'"
+    if [[ "$current" != "$ITERM_FOLDER_PATH" ]]; then
+      /usr/bin/defaults write com.googlecode.iterm2 PrefsCustomFolder -string "$ITERM_FOLDER_PATH"
+      /usr/bin/defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true
+      echo "[iTerm2] PrefsCustomFolder set → $ITERM_FOLDER_PATH (restart iTerm2)"
+    else
+      [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] PrefsCustomFolder already correct"
+    fi
+  }
+
+  # Export current prefs → repo copy (XML)
+  iterm_export() {
+    mkdir -p "$ITERM_FOLDER_PATH" || { echo "[iTerm2] mkdir failed: $ITERM_FOLDER_PATH"; return 1; }
+    echo "[iTerm2] Exporting prefs…"
+    echo "[DEBUG] dest='$ITERM_PLIST_PATH'"
+    /usr/bin/defaults export com.googlecode.iterm2 "$ITERM_PLIST_PATH" || { echo "[iTerm2] defaults export failed"; return 1; }
+    /usr/bin/plutil -convert xml1 "$ITERM_PLIST_PATH" 2>/dev/null
+    if /usr/bin/plutil -lint "$ITERM_PLIST_PATH" >/dev/null; then
+      echo "[iTerm2] Exported → $ITERM_PLIST_PATH"
+    else
+      echo "[iTerm2] WARNING: plist failed validation at $ITERM_PLIST_PATH"
+    fi
+  }
+
+  # Test the LOCAL plist
+  iterm_test() {
+    if [[ ! -f "$ITERM_PLIST_PATH" ]]; then
+      echo "[iTerm2] Plist not found: $ITERM_PLIST_PATH"; return 1
+    fi
+    echo "[iTerm2] Linting $ITERM_PLIST_PATH"
+    if /usr/bin/plutil -lint "$ITERM_PLIST_PATH" >/dev/null; then
+      echo "[iTerm2] OK: Valid plist"
+    else
+      echo "[iTerm2] FAIL: Invalid plist"
+    fi
+  }
+
+  # Revert to ~/Library prefs
+  iterm_revert_local() {
+    /usr/bin/defaults delete com.googlecode.iterm2 PrefsCustomFolder 2>/dev/null
+    /usr/bin/defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool false
+    echo "[iTerm2] Reverted to local prefs. Restart iTerm2."
+  }
+
+  # --- SSH include setup ---
+  ssh_include_setup() {
+    mkdir -p "$(dirname "$SSH_INCLUDE_FILE")"
+
+    # Ensure ~/.ssh/config exists
+    [[ -f "$HOME/.ssh/config" ]] || touch "$HOME/.ssh/config"
+
+    # Ensure Include line present
+    if ! grep -qF "$SSH_INCLUDE_FILE" "$HOME/.ssh/config"; then
+      echo -e "\n# iTerm profile switching rules\nInclude $SSH_INCLUDE_FILE" >> "$HOME/.ssh/config"
+      echo "[SSH] Added Include → $SSH_INCLUDE_FILE in ~/.ssh/config"
+    else
+      [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] ~/.ssh/config already includes $SSH_INCLUDE_FILE"
+    fi
+
+    # Write the include file
+    cat > "$SSH_INCLUDE_FILE" <<EOF
+# Auto-generated iTerm SSH include
+Host $SSH_HOST_PATTERN
+    PermitLocalCommand yes
+    LocalCommand printf '\033]1337;SetProfile=$SSH_ITERM_PROFILE\007'
+EOF
+    # echo "[SSH] Wrote $SSH_INCLUDE_FILE"
+  }
+
+  # Auto-run iTerm + SSH setup on interactive shells
+  if [[ $- == *i* ]]; then
+    iterm_setup
+    ssh_include_setup
+  fi
+
+else
+  [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] Skipping iTerm/SSH sync (repo='$ITERM_REPO_DIR' ostype='$OSTYPE' user='$USER')"
+fi
+
+# --- end ---
