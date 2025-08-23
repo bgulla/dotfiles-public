@@ -30,6 +30,10 @@ On macOS, iTerm2 is wired up to load its preferences straight from this repo so 
 
 There’s also a bit of SSH magic: when you `ssh` to an IP address or certain hosts (like `*.lol`), iTerm will switch to a different profile with a distinct theme. That way you always know at a glance when you’re on a remote box — and it flips back when you disconnect.  If you have custom themes and settings in iTerm, this will probably b0rk them.
 
+Note: This is currently only targeting the `bgulla` or `brandon` user. You can override this by editing the line:
+```zsh
+[[ "$USER" == "brandon" || "$USER" == "bgulla" ]] # edit this line if you're not Brandon
+```
 
 ## Updating iTerm2 Prefs
 

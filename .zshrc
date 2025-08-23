@@ -329,7 +329,7 @@ EOF
   fi
 
 else
-  [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] Skipping iTerm/SSH sync (repo='$ITERM_REPO_DIR' ostype='$OSTYPE' user='$USER')"
+  [[ $ITERM_DEBUG == 1 ]] && echo "[DEBUG] Skipping iTerm/SSH sync (repo='$ITERM_REPO_DIR' ostype='$OSTYPE' user='$USER')" # edit this line if you're not Brandon
 fi
 
 # --- end ---
