@@ -216,3 +216,18 @@ else
     export PATH="$PATH"
 fi
 
+# --- iTerm2: load prefs from GitHub Pages (mac-only; user=brandon|bgulla) ---
+if [[ $- == *i* ]] && [[ "$OSTYPE" == darwin* ]] && [[ "$USER" == "brandon" || "$USER" == "bgulla" ]]; then
+  ITERM_PREFS_URL="https://bgulla.github.io/dotfiles-public/iterm/"
+
+  # Only proceed if we're in iTerm2 OR the iTerm2 prefs domain exists
+  if [[ "$TERM_PROGRAM" == "iTerm.app" ]] || /usr/bin/defaults domains 2>/dev/null | /usr/bin/grep -q com.googlecode.iterm2; then
+    current=$(/usr/bin/defaults read com.googlecode.iterm2 PrefsCustomFolder 2>/dev/null || echo "")
+    if [[ "$current" != "$ITERM_PREFS_URL" ]]; then
+      /usr/bin/defaults write com.googlecode.iterm2 PrefsCustomFolder -string "$ITERM_PREFS_URL"
+      /usr/bin/defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true
+      print -P "%F{cyan}[iTerm2]%f Prefs set to GitHub Pages. Restart iTerm2 to apply."
+    fi
+  fi
+fi
+# ---------------------------------------------------------------------------
