@@ -30,6 +30,22 @@ On macOS, iTerm2 is wired up to load its preferences straight from this repo so 
 
 There’s also a bit of SSH magic: when you connect to certain hosts (like `*.lol`), iTerm will switch to a different profile with a distinct theme. That way you always know at a glance when you’re on a remote box — and it flips back when you disconnect.  If you have custom themes and settings in iTerm, this will probably b0rk them.
 
+
+## Updating iTerm2 Prefs
+
+If you’ve changed settings in iTerm2 and want to commit them back into this repo, run the following from inside your `dotfiles` directory:
+
+```sh
+
+# dump current prefs into repo
+defaults export com.googlecode.iterm2 iterm/com.googlecode.iterm2.plist
+
+# make sure it’s human-readable XML (not binary)
+plutil -convert xml1 iterm/com.googlecode.iterm2.plist
+
+# sanity-check it’s valid
+plutil -lint iterm/com.googlecode.iterm2.plist
+```
 ---
 
 These dotfiles are meant to be portable, easy to apply, and give me a consistent environment no matter where I’m working.
