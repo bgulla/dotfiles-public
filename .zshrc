@@ -317,7 +317,8 @@ if [[ -n "$ITERM_REPO_DIR" ]] && [[ "$OSTYPE" == darwin* ]] && [[ "$USER" == "br
 # Auto-generated iTerm SSH include
 Host $SSH_HOST_PATTERN
     PermitLocalCommand yes
-    LocalCommand printf '\033]1337;SetProfile=$SSH_ITERM_PROFILE\007'
+    Match exec "test -t 0"
+        LocalCommand printf '\033]1337;SetProfile=$SSH_ITERM_PROFILE\007'
 EOF
     # echo "[SSH] Wrote $SSH_INCLUDE_FILE"
   }
