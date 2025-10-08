@@ -40,7 +40,7 @@ else
 fi
 
 # Run original pfetch
-pfetch
+~/bin/pfetch
 
 # Print our custom info aligned with pfetch output
 # Get the info label length (pfetch default is usually 8 chars + 1 space)
