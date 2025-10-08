@@ -79,7 +79,7 @@ HISTTIMEFORMAT="%F %T "
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git docker docker-compose kubectl 1password ansible brew pip rsync sigstore tmux tmuxinator helm)
+plugins=(git docker docker-compose kubectl 1password ansible brew pip rsync sigstore tmux tmuxinator helm kube-ps1)
 
 #source $ZSH/oh-my-zsh.sh
 source ${HOME}/dotfiles/ohmyzsh/oh-my-zsh.sh
@@ -334,3 +334,33 @@ else
 fi
 
 # --- end ---
+
+# ============================================================================
+# pfetch - Display system info once per day on first interactive shell login
+# ============================================================================
+# This runs pfetch (a minimal system info tool) only once per day when you
+# first log into a server or open a new terminal session. It won't interfere
+# with scp/rsync because it only runs in interactive shells.
+#
+# How it works:
+# 1. Checks if the shell is interactive (not a script or file transfer)
+# 2. Checks if pfetch-wrapper command exists
+# 3. Creates a timestamp file (~/.pfetch_last_run) with today's date
+# 4. Only runs pfetch if the timestamp doesn't exist or is from a previous day
+# 5. Updates the timestamp after running so it won't run again today
+#
+# Custom features (via pfetch-wrapper):
+# - Shows IP address of the server
+# - Detects if Kubernetes (k3s or rke2) is installed on the node
+# ============================================================================
+
+if [[ -o interactive ]] && command -v pfetch-wrapper &> /dev/null && [[ ! -f "${HOME}/.disablepfetch" ]]; then
+    PFETCH_STAMP_FILE="${HOME}/.pfetch_last_run"     # Timestamp file location
+    TODAY=$(date +%Y-%m-%d)                           # Current date (YYYY-MM-DD)
+
+    # Check if we haven't run pfetch today yet
+    if [[ ! -f "$PFETCH_STAMP_FILE" ]] || [[ "$(cat "$PFETCH_STAMP_FILE" 2>/dev/null)" != "$TODAY" ]]; then
+        pfetch-wrapper                                # Run the custom pfetch wrapper
+        echo "$TODAY" > "$PFETCH_STAMP_FILE"         # Save today's date to prevent re-running
+    fi
+fi

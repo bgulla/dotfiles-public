@@ -50,6 +50,40 @@ plutil -convert xml1 iterm/com.googlecode.iterm2.plist
 # sanity-check it’s valid
 plutil -lint iterm/com.googlecode.iterm2.plist
 ```
+
 ---
 
-These dotfiles are meant to be portable, easy to apply, and give me a consistent environment no matter where I’m working.
+## pfetch System Info 📊
+
+On first login each day, pfetch displays a minimal system information banner showing hostname, OS, kernel, memory, and more. This is configured to run once per day in interactive shells only, so it won't interfere with scp, rsync, or other file transfer operations.
+
+### Custom Features
+
+The pfetch wrapper adds two additional pieces of information:
+- **IP Address**: Shows the primary IP address of the machine
+- **Kubernetes Detection**: Automatically detects if k3s or rke2 is installed on the node by checking for `/etc/rancher/{k3s,rke2}/k3s.yaml` or `rke2.yaml`
+
+### Disabling pfetch
+
+If you need to disable pfetch (break glass scenario), create an empty file in your home directory:
+
+```sh
+touch ~/.disablepfetch
+```
+
+To re-enable it, simply remove the file:
+
+```sh
+rm ~/.disablepfetch
+```
+
+### How It Works
+
+- Runs only in **interactive shells** (won't break scripting or file transfers)
+- Creates a timestamp file (`~/.pfetch_last_run`) to track the last run date
+- Only displays once per day on first login
+- Checks for `~/.disablepfetch` file before running
+
+---
+
+These dotfiles are meant to be portable, easy to apply, and give me a consistent environment no matter where I'm working.
