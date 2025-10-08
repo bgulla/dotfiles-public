@@ -43,8 +43,8 @@ fi
 ~/bin/pfetch
 
 # Print our custom info aligned with pfetch output
-# Get the info label length (pfetch default is usually 8 chars + 1 space)
-printf "\033[1;34m%s\033[0m %s\n" "ip      " "$ip_addr"
+# pfetch uses 16 chars of left padding, then colored label
+printf "\033[16C\033[31m\033[1mip\033[0m\033[2D\033[7C\033[39m%s\033[0m\n" "$ip_addr"
 if [ -n "$k8s_type" ]; then
-    printf "\033[1;34m%s\033[0m %s\n" "k8s     " "$k8s_type"
+    printf "\033[16C\033[31m\033[1mk8s\033[0m\033[3D\033[7C\033[39m%s\033[0m\n" "$k8s_type"
 fi
