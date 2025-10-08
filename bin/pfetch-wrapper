@@ -1,0 +1,50 @@
+#!/bin/sh
+# pfetch wrapper that adds IP address and Kubernetes detection
+
+# Detect primary IP address (first non-loopback IPv4)
+get_ip() {
+    # Try common methods to get primary IP
+    if command -v ip >/dev/null 2>&1; then
+        # Linux with 'ip' command
+        ip route get 1 2>/dev/null | awk '{print $7; exit}'
+    elif command -v ifconfig >/dev/null 2>&1; then
+        # macOS/BSD with 'ifconfig'
+        ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1
+    else
+        echo "N/A"
+    fi
+}
+
+# Detect Kubernetes installation
+get_k8s() {
+    if [ -f "/etc/rancher/rke2/rke2.yaml" ]; then
+        echo "rke2"
+    elif [ -f "/etc/rancher/k3s/k3s.yaml" ]; then
+        echo "k3s"
+    else
+        echo ""
+    fi
+}
+
+# Get values
+ip_addr=$(get_ip)
+k8s_type=$(get_k8s)
+
+# Build PF_INFO string - add our custom fields
+if [ -n "$k8s_type" ]; then
+    # If k8s is installed, show both IP and k8s
+    export PF_INFO="ascii title os host kernel uptime pkgs memory"
+else
+    # If no k8s, just show IP
+    export PF_INFO="ascii title os host kernel uptime pkgs memory"
+fi
+
+# Run original pfetch
+pfetch
+
+# Print our custom info aligned with pfetch output
+# Get the info label length (pfetch default is usually 8 chars + 1 space)
+printf "\033[1;34m%s\033[0m %s\n" "ip      " "$ip_addr"
+if [ -n "$k8s_type" ]; then
+    printf "\033[1;34m%s\033[0m %s\n" "k8s     " "$k8s_type"
+fi
