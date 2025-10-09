@@ -206,6 +206,11 @@ function tpi-cli() {
     tpi --user="$user" --password="$password" --host="$board_host" "${args[@]}"
 }
 
+# Create directory and cd into it
+function mkdircd() {
+    mkdir -p "$1" && cd "$1"
+}
+
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
 # Check if the system is macOS
